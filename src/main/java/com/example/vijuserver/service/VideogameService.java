@@ -17,6 +17,9 @@ public class VideogameService {
     public List<Videogame> findAll(){
         return videogameRepository.findAll();
     }
+    public List<Videogame> findByName(String name) {
+        return videogameRepository.findByNameContainingIgnoreCase(name);
+    }
     public Optional<Videogame> findById(Long id){
         return videogameRepository.findById(id);
     }

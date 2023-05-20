@@ -6,9 +6,13 @@ import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 
-@Setter @Getter
+@Setter
+@Getter
 @RequiredArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
+
 public class ApiError {
     @NonNull
     private HttpStatus status;

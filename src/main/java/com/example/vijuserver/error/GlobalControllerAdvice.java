@@ -1,5 +1,6 @@
 package com.example.vijuserver.error;
 
+import com.example.vijuserver.error.exceptions.NewUserWithDifferentPasswordsException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,13 +11,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.sql.SQLException;
 @RestControllerAdvice
 public class GlobalControllerAdvice extends ResponseEntityExceptionHandler{
+    @ExceptionHandler(NewUserWithDifferentPasswordsException.class)
+    public ResponseEntity<ApiError> handleNewUserErrors(Exception ex) {
+        return buildErrorResponseEntity(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ApiError> handleUserNoEncontrado(UserNotFoundException ex){
-        ApiError apiError = new ApiError(HttpStatus.NOT_FOUND, ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiError);
-    }
-    @ExceptionHandler(PlatformNotFoundException.class)
-    public ResponseEntity<ApiError> handlePlatformNoEncontrado(PlatformNotFoundException ex){
         ApiError apiError = new ApiError(HttpStatus.NOT_FOUND, ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiError);
     }
@@ -50,5 +50,13 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler{
     public ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatus status, WebRequest request) {
         ApiError apiError = new ApiError(status, ex.getMessage());
         return ResponseEntity.status(status).body(apiError);
+    }
+    private ResponseEntity<ApiError> buildErrorResponseEntity(HttpStatus status, String message) {
+        return ResponseEntity.status(status)
+                .body(ApiError.builder()
+                        .status(status)
+                        .message(message)
+                        .build());
+
     }
 }

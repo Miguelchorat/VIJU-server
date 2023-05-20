@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,11 +19,14 @@ public class VideogameController {
     private final VideogameService videogameService;
 
     @GetMapping("/videogames")
-    public ResponseEntity<List<Videogame>> findAll(){
-        List<Videogame> videogames = videogameService.findAll();
-        if(videogames.isEmpty()){
-            throw new VideogameNotFoundException();
+    public ResponseEntity<List<Videogame>> findAll(@RequestParam(required = false) String search){
+        List<Videogame> videogames = null;
+        if (search == null) {
+            videogames = videogameService.findAll();
+        } else {
+            videogames = videogameService.findByName(search);
         }
+        Collections.sort(videogames, Comparator.comparing(Videogame::getName));
         return ResponseEntity.ok(videogames);
     }
     @GetMapping("/videogame/{id}")
