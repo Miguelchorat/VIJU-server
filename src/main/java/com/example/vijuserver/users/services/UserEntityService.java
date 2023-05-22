@@ -49,22 +49,52 @@ public class UserEntityService {
     }
 
     public UserEntity newUser(CreateUserDto newUser){
+        if (!newUser.getEmail().matches("^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Correo electrónico no válido");
+        }
+        if (!newUser.getUsername().matches("^[a-zA-Z\\d]{3,18}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nombre de usuario no válido");
+        }
+        if (!newUser.getPassword().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,32}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Contraseña no válida");
+        }
         if(newUser.getPassword().contentEquals(newUser.getPassword2())){
             UserEntity userEntity = UserEntity.builder()
                     .username(newUser.getUsername())
                     .password(passwordEncoder.encode(newUser.getPassword()))
-                    .avatar(newUser.getAvatar())
+                    .avatar("1.svg")
                     .email(newUser.getEmail())
                     .role(UserRole.USER)
                     .build();
 
+            boolean isUsernameDuplicate = checkIfUsernameExists(newUser.getUsername());
+            boolean isEmailDuplicate = checkIfEmailExists(newUser.getEmail());
+
+            if (isUsernameDuplicate && isEmailDuplicate) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de usuario y el correo electrónico ya existen");
+            } else if (isUsernameDuplicate) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de usuario ya existe");
+            } else if (isEmailDuplicate) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El correo electrónico ya existe");
+            }
+
             try {
                 return save(userEntity);
             } catch (DataIntegrityViolationException ex) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de usuario ya existe");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error al crear el usuario");
             }
         } else {
-            throw new NewUserWithDifferentPasswordsException();
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las contraseñas no coinciden");
         }
+    }
+
+    private boolean checkIfUsernameExists(String username) {
+        Optional<UserEntity> existingUser = userEntityRepository.findByUsername(username);
+        return existingUser.isPresent();
+    }
+
+    private boolean checkIfEmailExists(String email) {
+        Optional<UserEntity> existingUser = userEntityRepository.findByEmail(email);
+        return existingUser.isPresent();
     }
 }

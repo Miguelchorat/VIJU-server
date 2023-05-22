@@ -57,6 +57,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .antMatchers(HttpMethod.GET, "/reviewsFilter").permitAll()
                     .antMatchers(HttpMethod.GET, "/reviewsFilter/*").permitAll()
                     .antMatchers(HttpMethod.GET, "/review/*").permitAll()
+                    .antMatchers(HttpMethod.OPTIONS).permitAll()
                     .anyRequest().authenticated();
 
         http.addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class);

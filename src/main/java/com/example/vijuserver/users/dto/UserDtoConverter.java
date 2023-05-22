@@ -12,4 +12,14 @@ public class UserDtoConverter {
                 .email(user.getEmail())
                 .build();
     }
+
+    public GetUserIdDto convertUserEntityToGetUserIdDto(UserEntity user) {
+        return GetUserIdDto.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .avatar(user.getAvatar())
+                .email(user.getEmail())
+                .build();
+    }
+
 }
