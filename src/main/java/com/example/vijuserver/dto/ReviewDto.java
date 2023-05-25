@@ -23,4 +23,6 @@ public class ReviewDto {
     private LocalDateTime updatedAt;
     private GetUserIdDto user; // DTO de usuario
     private Videogame videogame;
+    private int likesCount;
+    private int favoritesCount;
 }

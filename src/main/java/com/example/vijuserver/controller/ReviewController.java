@@ -12,17 +12,22 @@ import com.example.vijuserver.users.dto.UserDtoConverter;
 import com.example.vijuserver.users.model.UserEntity;
 import com.example.vijuserver.users.services.UserEntityService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -34,15 +39,7 @@ public class ReviewController {
     private final VideogameService videogameService;
 
     @GetMapping("/reviews")
-    public ResponseEntity<List<Review>> findAll(){
-        List<Review> reviews = reviewService.findAll();
-        if(reviews.isEmpty()){
-            throw new ReviewNotFoundException();
-        }
-        return ResponseEntity.ok(reviews);
-    }
-    @GetMapping("/reviewsFilter")
-    public ResponseEntity<Page<Review>> findAllWithFilters(@RequestParam(defaultValue = "0") int page,
+    public ResponseEntity<Page<ReviewDto>> findAllWithFilters(@RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "16") int size,
                                                            @RequestParam(required = false) String search,
                                                            @RequestParam(defaultValue = "0") Integer minScore,
@@ -85,12 +82,91 @@ public class ReviewController {
                 reviews = reviewService.findAll(pageable);
             }
         }
-        return ResponseEntity.ok(reviews);
+        List<ReviewDto> reviewDtos = reviews.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+
+        Page<ReviewDto> reviewDtoPage = new PageImpl<>(reviewDtos, pageable, reviews.getTotalElements());
+        return ResponseEntity.ok(reviewDtoPage);
     }
+
+    @GetMapping("/reviewsDate")
+    public ResponseEntity<Page<ReviewDto>> findAllWithFilters(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") Integer minScore,
+            @RequestParam(defaultValue = "5") Integer maxScore,
+            @RequestParam(required = false) List<String> videogames,
+            @RequestParam(required = false) String timeframe
+    ) {
+        Pageable pageable;
+
+        if (timeframe != null && !timeframe.isEmpty()) {
+            LocalDateTime startDate;
+            LocalDateTime endDate = LocalDateTime.now(); // Fecha actual
+
+            // Calcular la fecha de inicio según el periodo de tiempo
+            if (timeframe.equals("day")) {
+                startDate = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+            } else if (timeframe.equals("week")) {
+                startDate = endDate.minusWeeks(1).with(LocalTime.MIN);
+            } else if (timeframe.equals("month")) {
+                startDate = endDate.minusMonths(1).with(LocalTime.MIN);
+            } else {
+                // Valor de timeframe no válido, retornar una respuesta de error
+                return ResponseEntity.badRequest().build();
+            }
+
+            pageable = PageRequest.of(page, size, Sort.by("likeCount").descending());
+            Page<Review> reviews;
+
+            if (search != null && !search.isEmpty()) {
+                if (minScore != null && maxScore != null && videogames != null) {
+                    reviews = reviewService.findByTitleContainingAndScoreBetweenAndVideogameNameInAndCreatedAtBetween(
+                            search, minScore, maxScore, videogames, startDate, endDate, pageable);
+                } else if (minScore != null && maxScore != null) {
+                    reviews = reviewService.findByTitleContainingAndScoreBetweenAndCreatedAtBetween(
+                            search, minScore, maxScore, startDate, endDate, pageable);
+                } else if (videogames != null) {
+                    reviews = reviewService.findByTitleContainingAndVideogameNameInAndCreatedAtBetween(
+                            search, videogames, startDate, endDate, pageable);
+                } else {
+                    reviews = reviewService.findByTitleContainingAndCreatedAtBetween(
+                            search, startDate, endDate, pageable);
+                }
+            } else {
+                if (minScore != null && maxScore != null && videogames != null) {
+                    reviews = reviewService.findByScoreBetweenAndVideogameNameInAndCreatedAtBetween(
+                            minScore, maxScore, videogames, startDate, endDate, pageable);
+                } else if (minScore != null && maxScore != null) {
+                    reviews = reviewService.findByScoreBetweenAndCreatedAtBetween(
+                            minScore, maxScore, startDate, endDate, pageable);
+                } else if (videogames != null) {
+                    reviews = reviewService.findByVideogameNameInAndCreatedAtBetween(
+                            videogames, startDate, endDate, pageable);
+                } else {
+                    reviews = reviewService.findByCreatedAtBetween(
+                            startDate, endDate, pageable);
+                }
+            }
+            List<ReviewDto> reviewDtos = reviews.stream()
+                    .map(this::convertToDto)
+                    .collect(Collectors.toList());
+
+            Page<ReviewDto> reviewDtoPage = new PageImpl<>(reviewDtos, pageable, reviews.getTotalElements());
+            return ResponseEntity.ok(reviewDtoPage);
+        } else {
+            // timeframe no proporcionado, se pueden usar las mismas opciones sin la restricción de tiempo
+            return findAllWithFilters(page, size, search, minScore, maxScore, videogames);
+        }
+    }
+
     @GetMapping("/review/{id}")
-    public ResponseEntity<Review> findById(@PathVariable Long id) {
+    public ResponseEntity<ReviewDto> findById(@PathVariable Long id) {
         Review review = reviewService.findById(id).orElseThrow(() -> new ReviewNotFoundException(id));
-        return ResponseEntity.ok(review);
+
+        return ResponseEntity.ok(convertToDto(review));
     }
     @PostMapping("/review")
     public ResponseEntity<ReviewDto> save(@RequestBody Review review,@RequestHeader("Authorization") String token) {
@@ -113,34 +189,69 @@ public class ReviewController {
         review.setVideogame(videogame);
         review = reviewService.save(review);
 
-        ReviewDto savedReviewDto = new ReviewDto();
-        savedReviewDto.setId(review.getId());
-        savedReviewDto.setTitle(review.getTitle());
-        savedReviewDto.setMessage(review.getMessage());
-        savedReviewDto.setScore(review.getScore());
-        savedReviewDto.setVideogame(review.getVideogame());
-        savedReviewDto.setCreatedAt(review.getCreatedAt());
-        savedReviewDto.setUpdatedAt(review.getUpdatedAt());
-        savedReviewDto.setUser(userDtoConverter.convertUserEntityToGetUserIdDto(review.getUser()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(review));
+    }
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedReviewDto);
+    private ReviewDto convertToDto(Review review) {
+        return new ReviewDto(
+                review.getId(),
+                review.getTitle(),
+                review.getMessage(),
+                review.getScore(),
+                review.getCreatedAt(),
+                review.getUpdatedAt(),
+                userDtoConverter.convertUserEntityToGetUserIdDto(review.getUser()),
+                review.getVideogame(),
+                review.getLikeCount(),
+                review.getFavoriteCount()
+        );
     }
     @PutMapping("/review/{id}")
-    public ResponseEntity<Review> update(@PathVariable Long id, @RequestBody Review review) {
+    public ResponseEntity<ReviewDto> update(@PathVariable Long id, @RequestBody Review review,@RequestHeader("Authorization") String token) {
+        Long userId = tokenProvider.getUserIdFromJWT(token);
+        UserEntity user = userService.findById(userId).orElse(null);
         Optional<Review> reviewCurrent = reviewService.findById(id);
         if (reviewCurrent.isPresent()) {
+            if (!reviewCurrent.get().getUser().equals(user)|| review.getUser().getId() != userId) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no autorizado para actualizar la reseña");
+            }
+            if(review.getScore() > 5 || review.getScore() < 1){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Puntuación no válida");
+            }
+            if(review.getMessage().length() < 3 || review.getMessage().length() > 10000 ){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mensaje no válido");
+            }
+            if(review.getTitle().length() < 3 || review.getTitle().length() > 50 ){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Título no válido");
+            }
+
             review.setId(id);
             review.setCreatedAt(reviewCurrent.get().getCreatedAt());
             Review reviewUpdated = reviewService.modify(review);
-            return new ResponseEntity<>(reviewUpdated, HttpStatus.OK);
+
+            ReviewDto updatedReviewDto = new ReviewDto();
+            updatedReviewDto.setId(reviewUpdated.getId());
+            updatedReviewDto.setTitle(reviewUpdated.getTitle());
+            updatedReviewDto.setMessage(reviewUpdated.getMessage());
+            updatedReviewDto.setScore(reviewUpdated.getScore());
+            updatedReviewDto.setVideogame(reviewUpdated.getVideogame());
+            updatedReviewDto.setCreatedAt(reviewUpdated.getCreatedAt());
+            updatedReviewDto.setUpdatedAt(reviewUpdated.getUpdatedAt());
+            updatedReviewDto.setUser(userDtoConverter.convertUserEntityToGetUserIdDto(reviewUpdated.getUser()));
+
+            return ResponseEntity.ok(updatedReviewDto);
         } else {
             throw new ReviewNotFoundException(id);
         }
     }
     @DeleteMapping("/review/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id,@RequestHeader("Authorization") String token) {
+        Long userId = tokenProvider.getUserIdFromJWT(token);
         Optional<Review> review = reviewService.findById(id);
         if (review.isPresent()) {
+            if (review.get().getUser().getId() != userId) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no autorizado para eliminar la reseña");
+            }
             reviewService.deleteById(id);
             return ResponseEntity.noContent().build();
         } else {

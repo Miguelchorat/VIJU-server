@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,5 +71,48 @@ public class ReviewService {
     }
     public Page<Review> findAll(Pageable pageable) {
         return reviewRepository.findAll(pageable);
+    }
+
+    public Page<Review> findByTitleContainingAndScoreBetweenAndVideogameNameInAndCreatedAtBetween(
+            String title, Integer minScore, Integer maxScore, List<String> videogameNames, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return reviewRepository.findByTitleContainingAndScoreBetweenAndVideogameNameInAndCreatedAtBetween(
+                title, minScore, maxScore, videogameNames,startDate, endDate, pageable);
+    }
+
+    public Page<Review> findByTitleContainingAndScoreBetweenAndCreatedAtBetween(
+            String title, Integer minScore, Integer maxScore, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return reviewRepository.findByTitleContainingAndScoreBetweenAndCreatedAtBetween(
+                title, minScore, maxScore,startDate, endDate, pageable);
+    }
+
+    public Page<Review> findByTitleContainingAndVideogameNameInAndCreatedAtBetween(
+            String title, List<String> videogameNames, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return reviewRepository.findByTitleContainingAndVideogameNameInAndCreatedAtBetween(title, videogameNames,startDate, endDate, pageable);
+    }
+
+    public Page<Review> findByTitleContainingAndCreatedAtBetween(String title, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return reviewRepository.findByTitleContainingAndCreatedAtBetween(title,startDate, endDate,  pageable);
+    }
+
+    public Page<Review> findByScoreBetweenAndVideogameNameInAndCreatedAtBetween(
+            Integer minScore, Integer maxScore, List<String> videogameNames, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return reviewRepository.findByScoreBetweenAndVideogameNameInAndCreatedAtBetween(minScore, maxScore,  videogameNames, startDate, endDate, pageable);
+    }
+
+    public Page<Review> findByScoreBetweenAndCreatedAtBetween(
+            Integer minScore, Integer maxScore, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return reviewRepository.findByScoreBetweenAndCreatedAtBetween(minScore, maxScore, startDate, endDate, pageable);
+    }
+
+    public Page<Review> findByVideogameNameInAndCreatedAtBetween(List<String> videogameNames, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return reviewRepository.findByVideogameNameInAndCreatedAtBetween(videogameNames, startDate, endDate, pageable);
+    }
+
+    public Page<Review> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return reviewRepository.findByCreatedAtBetween( startDate, endDate, pageable);
+    }
+
+    public int countReviewsByUserId(Long userId) {
+        return reviewRepository.countByUser_Id(userId);
     }
 }

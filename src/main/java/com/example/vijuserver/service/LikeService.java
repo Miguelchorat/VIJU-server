@@ -27,4 +27,7 @@ public class LikeService {
     public void deleteById(Long id){
         likeRepository.deleteById(id);
     }
+    public int countLikesByUserId(Long userId) {
+        return likeRepository.countByUser_Id(userId);
+    }
 }

@@ -27,4 +27,7 @@ public class FavoriteService {
     public void deleteById(Long id){
         favoriteRepository.deleteById(id);
     }
+    public int countFavoritesByUserId(Long userId) {
+        return favoriteRepository.countByUser_Id(userId);
+    }
 }

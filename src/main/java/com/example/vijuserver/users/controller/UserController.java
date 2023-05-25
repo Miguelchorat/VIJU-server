@@ -1,9 +1,10 @@
 package com.example.vijuserver.users.controller;
 
 import com.example.vijuserver.error.UserNotFoundException;
-import com.example.vijuserver.users.dto.CreateUserDto;
-import com.example.vijuserver.users.dto.GetUserDto;
-import com.example.vijuserver.users.dto.UserDtoConverter;
+import com.example.vijuserver.service.FavoriteService;
+import com.example.vijuserver.service.LikeService;
+import com.example.vijuserver.service.ReviewService;
+import com.example.vijuserver.users.dto.*;
 import com.example.vijuserver.users.model.UserEntity;
 import com.example.vijuserver.users.services.UserEntityService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,9 @@ import java.util.Optional;
 public class UserController {
     private final UserEntityService userService;
     private final UserDtoConverter userDtoConverter;
+    private final LikeService likeService;
+    private final FavoriteService favoriteService;
+    private final ReviewService reviewService;
 
     @GetMapping("/users")
     public ResponseEntity<List<UserEntity>> findAll(){
@@ -34,6 +38,24 @@ public class UserController {
     public ResponseEntity<UserEntity> findById(@PathVariable Long id) {
         UserEntity user = userService.findById(id).orElseThrow(() -> new UserNotFoundException(id));
         return ResponseEntity.ok(user);
+    }
+    @GetMapping("/user/username={username}")
+    public ResponseEntity<GetUserIdDto> findByUsername(@PathVariable String username) {
+        UserEntity user = userService.findByUsername(username).orElseThrow(() -> new UserNotFoundException());
+        GetUserIdDto getUserIdDto = userDtoConverter.convertUserEntityToGetUserIdDto(user);
+        return ResponseEntity.ok(getUserIdDto);
+    }
+    @GetMapping("/user/stats/username={username}")
+    public ResponseEntity<UserStatsDto> getUserStats(@PathVariable String username) {
+        UserEntity user = userService.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        int likeCount = likeService.countLikesByUserId(user.getId());
+        int favoriteCount = favoriteService.countFavoritesByUserId(user.getId());
+        int reviewCount = reviewService.countReviewsByUserId(user.getId());
+
+        UserStatsDto userStatsDto = new UserStatsDto(likeCount, favoriteCount, reviewCount);
+        return ResponseEntity.ok(userStatsDto);
     }
     @PutMapping("/user/{id}")
     public ResponseEntity<UserEntity> update(@PathVariable Long id, @RequestBody UserEntity user) {

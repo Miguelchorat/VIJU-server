@@ -1,12 +1,16 @@
 package com.example.vijuserver.model;
 
+import com.example.vijuserver.repository.ReviewRepository;
 import com.example.vijuserver.users.model.UserEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -32,4 +36,11 @@ public class Review {
     @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name="videogame_id")
     private Videogame videogame;
+
+    @Formula("(SELECT COUNT(*) FROM likes l WHERE l.review_id = id)")
+    private int likeCount;
+
+    @Formula("(SELECT COUNT(*) FROM favorites f WHERE f.review_id = id)")
+    private int favoriteCount;
+
 }
