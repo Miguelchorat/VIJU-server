@@ -1,8 +1,12 @@
 package com.example.vijuserver.controller;
 
 import com.example.vijuserver.error.FavoriteNotFoundException;
+import com.example.vijuserver.error.UserNotFoundException;
 import com.example.vijuserver.model.Favorite;
+import com.example.vijuserver.security.jwt.JwtProvider;
 import com.example.vijuserver.service.FavoriteService;
+import com.example.vijuserver.users.model.UserEntity;
+import com.example.vijuserver.users.services.UserEntityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,45 +19,32 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FavoriteController {
     private final FavoriteService favoriteService;
+    private final JwtProvider tokenProvider;
+    private final UserEntityService userService;
 
-    @GetMapping("/favorites")
-    public ResponseEntity<List<Favorite>> findAll(){
-        List<Favorite> favorites = favoriteService.findAll();
-        if(favorites.isEmpty()){
-            throw new FavoriteNotFoundException();
-        }
-        return ResponseEntity.ok(favorites);
+    @GetMapping("/review/{reviewId}/favorite")
+    public ResponseEntity<Boolean> isReviewFavorite(@PathVariable Long reviewId,@RequestHeader("Authorization") String token) {
+        Long userId = tokenProvider.getUserIdFromJWT(token);
+        UserEntity user = userService.findById(userId).orElseThrow(()-> new UserNotFoundException(userId));
+
+        boolean isFavorite = favoriteService.existsByUserIdAndReviewId(user.getId(), reviewId);
+
+        return ResponseEntity.ok(isFavorite);
     }
-    @GetMapping("/favorite/{id}")
-    public ResponseEntity<Favorite> findById(@PathVariable Long id) {
-        Favorite favorite = favoriteService.findById(id).orElseThrow(() -> new FavoriteNotFoundException(id));
-        return ResponseEntity.ok(favorite);
-    }
-    @PostMapping("/favorite")
-    public ResponseEntity<Favorite> save(@RequestBody Favorite favorite) {
-        favorite.setId(null);
-        favorite = favoriteService.save(favorite);
-        return ResponseEntity.status(HttpStatus.CREATED).body(favorite);
-    }
-    @PutMapping("/favorite/{id}")
-    public ResponseEntity<Favorite> update(@PathVariable Long id, @RequestBody Favorite favorite) {
-        Optional<Favorite> favoriteCurrent = favoriteService.findById(id);
-        if (favoriteCurrent.isPresent()) {
-            favorite.setId(id);
-            Favorite favoriteUpdated = favoriteService.save(favorite);
-            return new ResponseEntity<>(favoriteUpdated, HttpStatus.OK);
+
+    @PostMapping("/favorite/{reviewId}")
+    public ResponseEntity<String> toggleFavorite(@PathVariable Long reviewId, @RequestHeader("Authorization") String token) {
+        Long userId = tokenProvider.getUserIdFromJWT(token);
+        UserEntity user = userService.findById(userId).orElseThrow(()-> new UserNotFoundException(userId));
+
+        boolean hasLiked = favoriteService.existsByUserIdAndReviewId(userId, reviewId);
+
+        if (hasLiked) {
+            favoriteService.removeFavorite(userId, reviewId);
+            return ResponseEntity.ok("Favorite removed successfully");
         } else {
-            throw new FavoriteNotFoundException(id);
-        }
-    }
-    @DeleteMapping("/favorite/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        Optional<Favorite> favorite = favoriteService.findById(id);
-        if (favorite.isPresent()) {
-            favoriteService.deleteById(id);
-            return ResponseEntity.noContent().build();
-        } else {
-            throw new FavoriteNotFoundException(id);
+            favoriteService.addFavorite(user, reviewId);
+            return ResponseEntity.ok("Favorite added successfully");
         }
     }
 }

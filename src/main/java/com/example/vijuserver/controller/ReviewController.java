@@ -2,6 +2,7 @@ package com.example.vijuserver.controller;
 
 import com.example.vijuserver.dto.ReviewDto;
 import com.example.vijuserver.error.ReviewNotFoundException;
+import com.example.vijuserver.error.UserNotFoundException;
 import com.example.vijuserver.error.VideogameNotFoundException;
 import com.example.vijuserver.model.Review;
 import com.example.vijuserver.model.Videogame;
@@ -41,125 +42,60 @@ public class ReviewController {
     @GetMapping("/reviews")
     public ResponseEntity<Page<ReviewDto>> findAllWithFilters(@RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "16") int size,
-                                                           @RequestParam(required = false) String search,
+                                                           @RequestParam(defaultValue = "") String search,
                                                            @RequestParam(defaultValue = "0") Integer minScore,
                                                            @RequestParam(defaultValue = "5") Integer maxScore,
-                                                           @RequestParam(required = false) List<String> videogames){
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Review> reviews;
+                                                           @RequestParam(defaultValue = "") String timeframe,
+                                                           @RequestParam(defaultValue = "") String username,
+                                                           @RequestParam(required = false) List<String> videogames,
+                                                           @RequestParam(required = false) Long userId,
+                                                           @RequestParam(defaultValue = "") String method) {
 
-        if(search != null && !search.isEmpty()){
-            if(minScore != null && maxScore != null && videogames != null){
-                reviews = reviewService.findByTitleContainingAndScoreBetweenAndVideogameNameIn(
-                        search, minScore, maxScore, videogames, pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("likeCount").descending());
+        Page<Review> reviews;
+        LocalDateTime startDate;
+        LocalDateTime endDate = LocalDateTime.now();
+        UserEntity user = null;
+
+        if(userId != null) {
+            user = userService.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+        }
+
+        if (timeframe.equals("day")) {
+            startDate = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+        } else if (timeframe.equals("week")) {
+            startDate = endDate.minusWeeks(1).with(LocalTime.MIN);
+        } else if (timeframe.equals("month")) {
+            startDate = endDate.minusMonths(1).with(LocalTime.MIN);
+        } else {
+            pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+            startDate = endDate.minusYears(99).with(LocalTime.MIN);
+        }
+
+        if (videogames == null) {
+            if (userId != null && method.equalsIgnoreCase("likes")) {
+                reviews = reviewService.findByTitleContainingAndScoreBetweenAndCreatedAtBetweenAndUserUsernameContainingAndUserLikes(search, minScore, maxScore, startDate, endDate, username, user.getLikes(), pageable);
+            } else if (userId != null && method.equalsIgnoreCase("favorites")) {
+                reviews = reviewService.findByTitleContainingAndScoreBetweenAndCreatedAtBetweenAndUserUsernameContainingAndUserFavorites(search, minScore, maxScore, startDate, endDate, username, user.getFavorites(), pageable);
+            } else {
+                reviews = reviewService.findByTitleContainingAndScoreBetweenAndCreatedAtBetweenAndUserUsernameContaining(search, minScore, maxScore, startDate, endDate, username, pageable);
             }
-            else if(minScore != null && maxScore != null){
-                reviews = reviewService.findByTitleContainingAndScoreBetween(
-                        search, minScore, maxScore, pageable);
-            }
-            else if(videogames != null){
-                reviews = reviewService.findByTitleContainingAndVideogameNameIn(
-                        search, videogames, pageable);
-            }
-            else{
-                reviews = reviewService.findByTitleContaining(search, pageable);
+        } else {
+            if (userId != null && method.equalsIgnoreCase("likes")) {
+                reviews = reviewService.findByTitleContainingAndScoreBetweenAndVideogameNameInAndCreatedAtBetweenAndUserUsernameContainingAndUserLikes(search, minScore, maxScore, videogames, startDate, endDate, username,  user.getLikes(), pageable);
+            } else if (userId != null && method.equalsIgnoreCase("favorites")) {
+                reviews = reviewService.findByTitleContainingAndScoreBetweenAndVideogameNameInAndCreatedAtBetweenAndUserUsernameContainingAndUserFavorites(search, minScore, maxScore, videogames, startDate, endDate,  username,  user.getFavorites(), pageable);
+            } else {
+                reviews = reviewService.findByTitleContainingAndScoreBetweenAndVideogameNameInAndCreatedAtBetweenAndUserUsernameContaining(search, minScore, maxScore, videogames, startDate, endDate, username, pageable);
             }
         }
-        else{
-            if(minScore != null && maxScore != null && videogames != null){
-                reviews = reviewService.findByScoreBetweenAndVideogameNameIn(
-                        minScore, maxScore, videogames, pageable);
-            }
-            else if(minScore != null && maxScore != null){
-                reviews = reviewService.findByScoreBetween(
-                        minScore, maxScore, pageable);
-            }
-            else if(videogames != null){
-                reviews = reviewService.findByVideogameNameIn(
-                        videogames, pageable);
-            }
-            else{
-                reviews = reviewService.findAll(pageable);
-            }
-        }
+
         List<ReviewDto> reviewDtos = reviews.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
 
         Page<ReviewDto> reviewDtoPage = new PageImpl<>(reviewDtos, pageable, reviews.getTotalElements());
         return ResponseEntity.ok(reviewDtoPage);
-    }
-
-    @GetMapping("/reviewsDate")
-    public ResponseEntity<Page<ReviewDto>> findAllWithFilters(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "8") int size,
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") Integer minScore,
-            @RequestParam(defaultValue = "5") Integer maxScore,
-            @RequestParam(required = false) List<String> videogames,
-            @RequestParam(required = false) String timeframe
-    ) {
-        Pageable pageable;
-
-        if (timeframe != null && !timeframe.isEmpty()) {
-            LocalDateTime startDate;
-            LocalDateTime endDate = LocalDateTime.now(); // Fecha actual
-
-            // Calcular la fecha de inicio según el periodo de tiempo
-            if (timeframe.equals("day")) {
-                startDate = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-            } else if (timeframe.equals("week")) {
-                startDate = endDate.minusWeeks(1).with(LocalTime.MIN);
-            } else if (timeframe.equals("month")) {
-                startDate = endDate.minusMonths(1).with(LocalTime.MIN);
-            } else {
-                // Valor de timeframe no válido, retornar una respuesta de error
-                return ResponseEntity.badRequest().build();
-            }
-
-            pageable = PageRequest.of(page, size, Sort.by("likeCount").descending());
-            Page<Review> reviews;
-
-            if (search != null && !search.isEmpty()) {
-                if (minScore != null && maxScore != null && videogames != null) {
-                    reviews = reviewService.findByTitleContainingAndScoreBetweenAndVideogameNameInAndCreatedAtBetween(
-                            search, minScore, maxScore, videogames, startDate, endDate, pageable);
-                } else if (minScore != null && maxScore != null) {
-                    reviews = reviewService.findByTitleContainingAndScoreBetweenAndCreatedAtBetween(
-                            search, minScore, maxScore, startDate, endDate, pageable);
-                } else if (videogames != null) {
-                    reviews = reviewService.findByTitleContainingAndVideogameNameInAndCreatedAtBetween(
-                            search, videogames, startDate, endDate, pageable);
-                } else {
-                    reviews = reviewService.findByTitleContainingAndCreatedAtBetween(
-                            search, startDate, endDate, pageable);
-                }
-            } else {
-                if (minScore != null && maxScore != null && videogames != null) {
-                    reviews = reviewService.findByScoreBetweenAndVideogameNameInAndCreatedAtBetween(
-                            minScore, maxScore, videogames, startDate, endDate, pageable);
-                } else if (minScore != null && maxScore != null) {
-                    reviews = reviewService.findByScoreBetweenAndCreatedAtBetween(
-                            minScore, maxScore, startDate, endDate, pageable);
-                } else if (videogames != null) {
-                    reviews = reviewService.findByVideogameNameInAndCreatedAtBetween(
-                            videogames, startDate, endDate, pageable);
-                } else {
-                    reviews = reviewService.findByCreatedAtBetween(
-                            startDate, endDate, pageable);
-                }
-            }
-            List<ReviewDto> reviewDtos = reviews.stream()
-                    .map(this::convertToDto)
-                    .collect(Collectors.toList());
-
-            Page<ReviewDto> reviewDtoPage = new PageImpl<>(reviewDtos, pageable, reviews.getTotalElements());
-            return ResponseEntity.ok(reviewDtoPage);
-        } else {
-            // timeframe no proporcionado, se pueden usar las mismas opciones sin la restricción de tiempo
-            return findAllWithFilters(page, size, search, minScore, maxScore, videogames);
-        }
     }
 
     @GetMapping("/review/{id}")

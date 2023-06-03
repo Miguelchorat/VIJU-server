@@ -40,6 +40,49 @@ public class UserEntityService {
         user.setUpdatedAt(LocalDateTime.now());
         return userEntityRepository.save(user);
     }
+
+    public UserEntity modifyUser(UserEntity user,CreateUserDto newUser){
+        if (!newUser.getEmail().matches("^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Correo electrónico no válido");
+        }
+        if (!newUser.getUsername().matches("^[a-zA-Z\\d]{3,18}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nombre de usuario no válido");
+        }
+        if (!newUser.getPassword().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,32}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Contraseña no válida");
+        }
+        if(newUser.getPassword().contentEquals(newUser.getPassword2())){
+            boolean isUsernameDuplicate = false;
+            boolean isEmailDuplicate = false;
+
+            if(!user.getUsername().equalsIgnoreCase(newUser.getUsername())){
+                isUsernameDuplicate = checkIfUsernameExists(newUser.getUsername());
+            }
+            if(!user.getEmail().equalsIgnoreCase(newUser.getEmail())) {
+                isEmailDuplicate = checkIfEmailExists(newUser.getEmail());
+            }
+
+            if (isUsernameDuplicate && isEmailDuplicate) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de usuario y el correo electrónico ya existen");
+            } else if (isUsernameDuplicate) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de usuario ya existe");
+            } else if (isEmailDuplicate) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El correo electrónico ya existe");
+            }
+
+            try {
+                user.setEmail(newUser.getEmail());
+                user.setUsername(newUser.getUsername());
+                user.setPassword(passwordEncoder.encode(newUser.getPassword()));
+                user.setUpdatedAt(LocalDateTime.now());
+                return save(user);
+            } catch (DataIntegrityViolationException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error al crear el usuario");
+            }
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las contraseñas no coinciden");
+        }
+    }
     public void deleteById(Long id){
         userEntityRepository.deleteById(id);
     }

@@ -1,5 +1,8 @@
 package com.example.vijuserver.users.model;
 
+import com.example.vijuserver.model.Favorite;
+import com.example.vijuserver.model.Like;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +17,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -68,4 +72,12 @@ public class UserEntity implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    private List<Like> likes;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    private List<Favorite> favorites;
 }

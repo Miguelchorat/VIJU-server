@@ -1,8 +1,12 @@
 package com.example.vijuserver.controller;
 
 import com.example.vijuserver.error.LikeNotFoundException;
+import com.example.vijuserver.error.UserNotFoundException;
 import com.example.vijuserver.model.Like;
+import com.example.vijuserver.security.jwt.JwtProvider;
 import com.example.vijuserver.service.LikeService;
+import com.example.vijuserver.users.model.UserEntity;
+import com.example.vijuserver.users.services.UserEntityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,45 +18,32 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class LikeController {
     private final LikeService likeService;
+    private final JwtProvider tokenProvider;
+    private final UserEntityService userService;
 
-    @GetMapping("/likes")
-    public ResponseEntity<List<Like>> findAll(){
-        List<Like> likes = likeService.findAll();
-        if(likes.isEmpty()){
-            throw new LikeNotFoundException();
-        }
-        return ResponseEntity.ok(likes);
+    @GetMapping("/review/{reviewId}/liked")
+    public ResponseEntity<Boolean> isReviewLiked(@PathVariable Long reviewId,@RequestHeader("Authorization") String token) {
+        Long userId = tokenProvider.getUserIdFromJWT(token);
+        UserEntity user = userService.findById(userId).orElseThrow(()-> new UserNotFoundException(userId));
+
+        boolean isLiked = likeService.existsByUserIdAndReviewId(user.getId(), reviewId);
+
+        return ResponseEntity.ok(isLiked);
     }
-    @GetMapping("/like/{id}")
-    public ResponseEntity<Like> findById(@PathVariable Long id) {
-        Like like = likeService.findById(id).orElseThrow(() -> new LikeNotFoundException(id));
-        return ResponseEntity.ok(like);
-    }
-    @PostMapping("/like")
-    public ResponseEntity<Like> save(@RequestBody Like like) {
-        like.setId(null);
-        like = likeService.save(like);
-        return ResponseEntity.status(HttpStatus.CREATED).body(like);
-    }
-    @PutMapping("/like/{id}")
-    public ResponseEntity<Like> update(@PathVariable Long id, @RequestBody Like like) {
-        Optional<Like> likeCurrent = likeService.findById(id);
-        if (likeCurrent.isPresent()) {
-            like.setId(id);
-            Like likeUpdated = likeService.save(like);
-            return new ResponseEntity<>(likeUpdated, HttpStatus.OK);
+
+    @PostMapping("/like/{reviewId}")
+    public ResponseEntity<String> toggleLike(@PathVariable Long reviewId, @RequestHeader("Authorization") String token) {
+        Long userId = tokenProvider.getUserIdFromJWT(token);
+        UserEntity user = userService.findById(userId).orElseThrow(()-> new UserNotFoundException(userId));
+
+        boolean hasLiked = likeService.existsByUserIdAndReviewId(userId, reviewId);
+
+        if (hasLiked) {
+            likeService.removeLike(userId, reviewId);
+            return ResponseEntity.ok("Like removed successfully");
         } else {
-            throw new LikeNotFoundException(id);
-        }
-    }
-    @DeleteMapping("/like/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        Optional<Like> like = likeService.findById(id);
-        if (like.isPresent()) {
-            likeService.deleteById(id);
-            return ResponseEntity.noContent().build();
-        } else {
-            throw new LikeNotFoundException(id);
+            likeService.addLike(user, reviewId);
+            return ResponseEntity.ok("Like added successfully");
         }
     }
 }

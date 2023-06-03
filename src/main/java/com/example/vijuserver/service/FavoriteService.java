@@ -1,9 +1,16 @@
 package com.example.vijuserver.service;
 
 import com.example.vijuserver.model.Favorite;
+import com.example.vijuserver.model.Like;
+import com.example.vijuserver.model.Review;
 import com.example.vijuserver.repository.FavoriteRepository;
+import com.example.vijuserver.repository.ReviewRepository;
+import com.example.vijuserver.users.model.UserEntity;
+import com.example.vijuserver.users.services.UserEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,21 +20,36 @@ import java.util.Optional;
 public class FavoriteService {
     @Autowired
     private FavoriteRepository favoriteRepository;
+    @Autowired
+    private ReviewRepository reviewRepository;
 
-    public List<Favorite> findAll(){
-        return favoriteRepository.findAll();
-    }
-    public Optional<Favorite> findById(Long id){
-        return favoriteRepository.findById(id);
-    }
-    public Favorite save(Favorite favorite){
-        favorite.setCreated_at(LocalDateTime.now());
-        return favoriteRepository.save(favorite);
-    }
-    public void deleteById(Long id){
-        favoriteRepository.deleteById(id);
-    }
     public int countFavoritesByUserId(Long userId) {
         return favoriteRepository.countByUser_Id(userId);
+    }
+
+    public boolean existsByUserIdAndReviewId(Long userId,Long reviewId) {
+        return favoriteRepository.existsByUserIdAndReviewId(userId,reviewId);
+    }
+
+    public void addFavorite(UserEntity user, Long reviewId) {
+        Optional<Review> reviewOptional = reviewRepository.findById(reviewId);
+
+        if (reviewOptional.isPresent()) {
+            Review review = reviewOptional.get();
+
+            Favorite favorite = new Favorite();
+            favorite.setUser(user);
+            favorite.setReview(review);
+            favorite.setCreated_at(LocalDateTime.now());
+
+            favoriteRepository.save(favorite);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hubo un error inesperado");
+        }
+    }
+
+    public void removeFavorite(Long userId, Long reviewId) {
+        Optional<Favorite> favoriteOptional = favoriteRepository.findByUserIdAndReviewId(userId, reviewId);
+        favoriteOptional.ifPresent(favoriteRepository::delete);
     }
 }

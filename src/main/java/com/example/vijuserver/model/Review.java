@@ -1,6 +1,5 @@
 package com.example.vijuserver.model;
 
-import com.example.vijuserver.repository.ReviewRepository;
 import com.example.vijuserver.users.model.UserEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
@@ -42,5 +41,13 @@ public class Review {
 
     @Formula("(SELECT COUNT(*) FROM favorites f WHERE f.review_id = id)")
     private int favoriteCount;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL)
+    private List<Like> likes;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL)
+    private List<Favorite> favorites;
 
 }

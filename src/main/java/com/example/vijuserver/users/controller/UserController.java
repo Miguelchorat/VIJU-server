@@ -1,6 +1,7 @@
 package com.example.vijuserver.users.controller;
 
 import com.example.vijuserver.error.UserNotFoundException;
+import com.example.vijuserver.security.jwt.JwtProvider;
 import com.example.vijuserver.service.FavoriteService;
 import com.example.vijuserver.service.LikeService;
 import com.example.vijuserver.service.ReviewService;
@@ -25,6 +26,7 @@ public class UserController {
     private final LikeService likeService;
     private final FavoriteService favoriteService;
     private final ReviewService reviewService;
+    private final JwtProvider tokenProvider;
 
     @GetMapping("/users")
     public ResponseEntity<List<UserEntity>> findAll(){
@@ -57,16 +59,34 @@ public class UserController {
         UserStatsDto userStatsDto = new UserStatsDto(likeCount, favoriteCount, reviewCount);
         return ResponseEntity.ok(userStatsDto);
     }
-    @PutMapping("/user/{id}")
-    public ResponseEntity<UserEntity> update(@PathVariable Long id, @RequestBody UserEntity user) {
-        Optional<UserEntity> userCurrent = userService.findById(id);
+    @PutMapping("/user")
+    public ResponseEntity<GetUserIdDto> update(@RequestBody CreateUserDto user, @RequestHeader("Authorization") String token) {
+        Long userId = tokenProvider.getUserIdFromJWT(token);
+        Optional<UserEntity> userCurrent = userService.findById(userId);
         if (userCurrent.isPresent()) {
-            user.setId(id);
-            user.setCreatedAt(userCurrent.get().getCreatedAt());
-            UserEntity userUpdated = userService.modify(user);
-            return new ResponseEntity<>(userUpdated, HttpStatus.OK);
+            UserEntity userUpdated = userService.modifyUser(userCurrent.get(),user);
+            GetUserIdDto getUserIdDto = userDtoConverter.convertUserEntityToGetUserIdDto(userUpdated);
+            return new ResponseEntity<>(getUserIdDto, HttpStatus.OK);
         } else {
-            throw new UserNotFoundException(id);
+            throw new UserNotFoundException(userId);
+        }
+    }
+    @PutMapping("/user/avatar")
+    public ResponseEntity<GetUserIdDto> updateAvatar(@RequestBody UserEntity user, @RequestHeader("Authorization") String token) {
+        Long userId = tokenProvider.getUserIdFromJWT(token);
+        Optional<UserEntity> userCurrent = userService.findById(userId);
+        if (userCurrent.isPresent()) {
+            if(user.getAvatar().equalsIgnoreCase("1.svg") || user.getAvatar().equalsIgnoreCase("2.svg")
+                    || user.getAvatar().equalsIgnoreCase("3.svg") || user.getAvatar().equalsIgnoreCase("4.svg")){
+                userCurrent.get().setAvatar(user.getAvatar());
+            } else {
+                userCurrent.get().setAvatar("1.svg");
+            }
+            UserEntity userUpdated = userService.modify(userCurrent.get());
+            GetUserIdDto getUserIdDto = userDtoConverter.convertUserEntityToGetUserIdDto(userUpdated);
+            return ResponseEntity.ok(getUserIdDto);
+        } else {
+            throw new UserNotFoundException(userId);
         }
     }
     @DeleteMapping("/user/{id}")
