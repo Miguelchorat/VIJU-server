@@ -1,5 +1,6 @@
 package com.example.vijuserver.controller;
 
+import com.example.vijuserver.cache.UserCache;
 import com.example.vijuserver.error.FavoriteNotFoundException;
 import com.example.vijuserver.error.UserNotFoundException;
 import com.example.vijuserver.model.Favorite;
@@ -21,6 +22,7 @@ public class FavoriteController {
     private final FavoriteService favoriteService;
     private final JwtProvider tokenProvider;
     private final UserEntityService userService;
+    private UserCache userCache;
 
     @GetMapping("/review/{reviewId}/favorite")
     public ResponseEntity<Boolean> isReviewFavorite(@PathVariable Long reviewId,@RequestHeader("Authorization") String token) {
@@ -35,7 +37,11 @@ public class FavoriteController {
     @PostMapping("/favorite/{reviewId}")
     public ResponseEntity<String> toggleFavorite(@PathVariable Long reviewId, @RequestHeader("Authorization") String token) {
         Long userId = tokenProvider.getUserIdFromJWT(token);
-        UserEntity user = userService.findById(userId).orElseThrow(()-> new UserNotFoundException(userId));
+        UserEntity user = userCache.getUser(userId);
+        if (user == null) {
+            user = userService.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+            userCache.putUser(userId, user);
+        }
 
         boolean hasLiked = favoriteService.existsByUserIdAndReviewId(userId, reviewId);
 
