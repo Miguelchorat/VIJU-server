@@ -27,11 +27,11 @@ public class Review {
     private LocalDateTime createdAt;
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name="user_id")
     private UserEntity user;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name="videogame_id")
     private Videogame videogame;
