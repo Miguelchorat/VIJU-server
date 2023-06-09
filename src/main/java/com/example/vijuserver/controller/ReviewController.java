@@ -101,7 +101,6 @@ public class ReviewController {
     @GetMapping("/review/{id}")
     public ResponseEntity<ReviewDto> findById(@PathVariable Long id) {
         Review review = reviewService.findById(id).orElseThrow(() -> new ReviewNotFoundException(id));
-
         return ResponseEntity.ok(convertToDto(review));
     }
     @PostMapping("/review")
