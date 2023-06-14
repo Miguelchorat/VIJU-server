@@ -8,7 +8,7 @@ En el lado del servidor, se utiliza Spring Boot para implementar la lógica empr
 
 ## Lado Cliente
 
-[VIJU-SERVER](https://github.com/Miguelchorat/VIJU)
+[VIJU](https://github.com/Miguelchorat/VIJU)
 
 ## Instalación
 
