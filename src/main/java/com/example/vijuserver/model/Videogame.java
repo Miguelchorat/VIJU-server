@@ -3,7 +3,9 @@ package com.example.vijuserver.model;
 import lombok.*;
 import javax.persistence.*;
 import java.time.LocalDateTime;
-
+/**
+ * Modelo de videojuegos
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

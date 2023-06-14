@@ -3,6 +3,9 @@ package com.example.vijuserver.users.dto;
 import com.example.vijuserver.users.model.UserEntity;
 import org.springframework.stereotype.Component;
 
+/**
+ * Clase que se encarga de automatizar el cambio del UserEntity a un DTO en concreto
+ */
 @Component
 public class UserDtoConverter {
     public GetUserDto convertUserEntityToGetUserDto(UserEntity user) {

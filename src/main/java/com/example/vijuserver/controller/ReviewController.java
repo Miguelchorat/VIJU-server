@@ -18,18 +18,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Controlador de reviews
+ */
 @RestController
 @RequiredArgsConstructor
 public class ReviewController {
@@ -39,6 +37,20 @@ public class ReviewController {
     private final UserEntityService userService;
     private final VideogameService videogameService;
 
+    /**
+     * Recibe una petición de que le de un listado de Reviews dependiendo de unos parametros de filtros correspondientes
+     * @param page
+     * @param size
+     * @param search
+     * @param minScore
+     * @param maxScore
+     * @param timeframe
+     * @param username
+     * @param videogames
+     * @param userId
+     * @param method
+     * @return
+     */
     @GetMapping("/reviews")
     public ResponseEntity<Page<ReviewDto>> findAllWithFilters(@RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "16") int size,
@@ -98,11 +110,23 @@ public class ReviewController {
         return ResponseEntity.ok(reviewDtoPage);
     }
 
+    /**
+     * Busca una review por una id
+     * @param id
+     * @return
+     */
     @GetMapping("/review/{id}")
     public ResponseEntity<ReviewDto> findById(@PathVariable Long id) {
         Review review = reviewService.findById(id).orElseThrow(() -> new ReviewNotFoundException(id));
         return ResponseEntity.ok(convertToDto(review));
     }
+
+    /**
+     * Guarda una review comprobando que los campos sean los correctos
+     * @param review
+     * @param token
+     * @return
+     */
     @PostMapping("/review")
     public ResponseEntity<ReviewDto> save(@RequestBody Review review,@RequestHeader("Authorization") String token) {
         Long userId = tokenProvider.getUserIdFromJWT(token);
@@ -127,6 +151,11 @@ public class ReviewController {
         return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(review));
     }
 
+    /**
+     * Convierte una review en una review DTO
+     * @param review
+     * @return
+     */
     private ReviewDto convertToDto(Review review) {
         return new ReviewDto(
                 review.getId(),
@@ -141,6 +170,14 @@ public class ReviewController {
                 review.getFavoriteCount()
         );
     }
+
+    /**
+     * Modifica una review en concreta comprobando que los campos sean los correctos para su modificación
+     * @param id
+     * @param review
+     * @param token
+     * @return
+     */
     @PutMapping("/review/{id}")
     public ResponseEntity<ReviewDto> update(@PathVariable Long id, @RequestBody Review review,@RequestHeader("Authorization") String token) {
         Long userId = tokenProvider.getUserIdFromJWT(token);
@@ -179,6 +216,13 @@ public class ReviewController {
             throw new ReviewNotFoundException(id);
         }
     }
+
+    /**
+     * Borra una review en concreto primero comprobando que el usuario sea el mismo que el usuario del token de auth
+     * @param id
+     * @param token
+     * @return
+     */
     @DeleteMapping("/review/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id,@RequestHeader("Authorization") String token) {
         Long userId = tokenProvider.getUserIdFromJWT(token);

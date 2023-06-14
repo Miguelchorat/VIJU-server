@@ -5,6 +5,9 @@ import lombok.*;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * Modelo de favorito
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

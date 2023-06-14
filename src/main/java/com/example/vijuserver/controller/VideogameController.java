@@ -13,11 +13,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Controlador de videojuegos
+ */
 @RestController
 @RequiredArgsConstructor
 public class VideogameController {
     private final VideogameService videogameService;
 
+    /**
+     * Recibe una lista de los videojuegos ya sea por un filtro de búsqueda de su título o sin el
+     * @param search
+     * @return
+     */
     @GetMapping("/videogames")
     public ResponseEntity<List<Videogame>> findAll(@RequestParam(required = false) String search){
         List<Videogame> videogames = null;
@@ -29,17 +37,36 @@ public class VideogameController {
         Collections.sort(videogames, Comparator.comparing(Videogame::getName));
         return ResponseEntity.ok(videogames);
     }
+
+    /**
+     * Hace la busqueda de un videojuego por una id en concreto
+     * @param id
+     * @return
+     */
     @GetMapping("/videogame/{id}")
     public ResponseEntity<Videogame> findById(@PathVariable Long id) {
         Videogame videogame = videogameService.findById(id).orElseThrow(() -> new VideogameNotFoundException(id));
         return ResponseEntity.ok(videogame);
     }
+
+    /**
+     * Guarda un videojuego
+     * @param videogame
+     * @return
+     */
     @PostMapping("/videogame")
     public ResponseEntity<Videogame> save(@RequestBody Videogame videogame) {
         videogame.setId(null);
         videogame = videogameService.save(videogame);
         return ResponseEntity.status(HttpStatus.CREATED).body(videogame);
     }
+
+    /**
+     * Modifica un videojuego
+     * @param id
+     * @param videogame
+     * @return
+     */
     @PutMapping("/videogame/{id}")
     public ResponseEntity<Videogame> update(@PathVariable Long id, @RequestBody Videogame videogame) {
         Optional<Videogame> videogameCurrent = videogameService.findById(id);
@@ -52,6 +79,12 @@ public class VideogameController {
             throw new VideogameNotFoundException(id);
         }
     }
+
+    /**
+     * Elimina un videojuego
+     * @param id
+     * @return
+     */
     @DeleteMapping("/videogame/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         Optional<Videogame> videogame = videogameService.findById(id);

@@ -21,6 +21,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 
+/**
+ * Controlador de autenticación en la aplicación
+ */
 @RestController
 @RequiredArgsConstructor
 public class AuthenticationController {
@@ -28,7 +31,11 @@ public class AuthenticationController {
     private final JwtProvider tokenProvider;
     private final UserDtoConverter converter;
 
-
+    /**
+     * Login del usuario y sus comprobaciones necesarias. Devuelve el token de auth en la petición
+     * @param loginRequest
+     * @return
+     */
     @PostMapping("/auth/login")
     public JwtUserResponse login(@Valid @RequestBody LoginRequest loginRequest) {
         if (!loginRequest.getUsername().matches("^[a-zA-Z\\d]{3,18}$")) {

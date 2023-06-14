@@ -16,6 +16,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Servicio de like conecta las peticiones del controlador con el repositorio
+ */
 @Service
 public class LikeService {
     @Autowired
@@ -31,6 +34,11 @@ public class LikeService {
         return likeRepository.existsByUserIdAndReviewId(userId,reviewId);
     }
 
+    /**
+     * Añade un like al usuario de la review seleccionada
+     * @param user
+     * @param reviewId
+     */
     public void addLike(UserEntity user, Long reviewId) {
         Optional<Review> reviewOptional = reviewRepository.findById(reviewId);
 
@@ -52,6 +60,11 @@ public class LikeService {
         }
     }
 
+    /**
+     * Elimina un like al usuario de la review seleccionada
+     * @param userId
+     * @param reviewId
+     */
     public void removeLike(Long userId, Long reviewId) {
         Optional<Like> likeOptional = likeRepository.findByUserIdAndReviewId(userId, reviewId);
         likeOptional.ifPresent(likeRepository::delete);

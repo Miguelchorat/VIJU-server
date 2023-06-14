@@ -7,6 +7,9 @@ import lombok.Setter;
 
 import javax.validation.constraints.Pattern;
 
+/**
+ * Usuario que solo muestra unos ciertos datos. Este DTO es usado para la creación de usuarios
+ */
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class CreateUserDto {

@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
-
+/**
+ * Repositorio de likes donde se hará la busqueda en la base de datos
+ */
 public interface LikeRepository extends JpaRepository<Like, Long>, JpaSpecificationExecutor<Like> {
     int countByUser_Id(Long userId);
     //boolean existsByUserIdAndReviewId(Long userId,Long reviewId);

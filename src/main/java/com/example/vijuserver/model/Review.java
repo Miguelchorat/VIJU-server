@@ -10,7 +10,9 @@ import org.hibernate.annotations.NotFoundAction;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
-
+/**
+ * Modelo de review
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,10 +37,14 @@ public class Review {
     @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name="videogame_id")
     private Videogame videogame;
-
+    /**
+     * Tener un contador de los likes
+     */
     @Formula("(SELECT COUNT(*) FROM likes l WHERE l.review_id = id)")
     private int likeCount;
-
+    /**
+     * Tener un contador de los favoritos
+     */
     @Formula("(SELECT COUNT(*) FROM favorites f WHERE f.review_id = id)")
     private int favoriteCount;
 

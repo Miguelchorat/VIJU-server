@@ -18,9 +18,10 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
+/**
+ * Modelo de usuario con los datos pertinentes de autenticación
+ */
 @Data @NoArgsConstructor @AllArgsConstructor
 @Table(name="user")
 @Entity @EntityListeners(AuditingEntityListener.class)

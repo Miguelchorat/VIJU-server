@@ -9,6 +9,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
+/**
+ * Repositorio de favoritos donde se hará la busqueda en la base de datos
+ */
 public interface FavoriteRepository extends JpaRepository<Favorite, Long>, JpaSpecificationExecutor<Favorite> {
     int countByUser_Id(Long userId);
     // existsByUserIdAndReviewId(Long userId,Long reviewId);

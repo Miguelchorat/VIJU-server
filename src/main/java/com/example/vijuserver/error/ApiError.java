@@ -6,6 +6,9 @@ import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 
+/**
+ * Clase usada para mandar los datos de error que son mínimamente necesarios
+ */
 @Setter
 @Getter
 @RequiredArgsConstructor

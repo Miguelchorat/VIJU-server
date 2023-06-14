@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
+/**
+ * Clase que se encarga de la formación del token de autenticación del usuario logeado
+ */
 @Component
 @Log
 public class JwtProvider {

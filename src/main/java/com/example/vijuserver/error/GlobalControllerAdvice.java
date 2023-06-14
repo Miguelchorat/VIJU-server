@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import java.sql.SQLException;
+/**
+ * Capturas de errores para aplicar el ApiError a nuestras excepciones expresamente creadas
+ */
 @RestControllerAdvice
 public class GlobalControllerAdvice extends ResponseEntityExceptionHandler{
     @ExceptionHandler(NewUserWithDifferentPasswordsException.class)

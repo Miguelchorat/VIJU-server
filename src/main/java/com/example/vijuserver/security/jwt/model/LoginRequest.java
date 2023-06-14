@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Campos necesarios para el login del usuario
+ */
 public class LoginRequest {
 
     @NotBlank

@@ -3,7 +3,9 @@ import com.example.vijuserver.users.model.UserEntity;
 import lombok.*;
 import javax.persistence.*;
 import java.time.LocalDateTime;
-
+/**
+ * Modelo de like
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controlador de Likes
+ */
 @RestController
 @RequiredArgsConstructor
 public class LikeController {
@@ -16,6 +19,12 @@ public class LikeController {
     private final JwtProvider tokenProvider;
     private final UserEntityService userService;
 
+    /**
+     * Comprueba si del usuario que envio la petición con el token dio like a una review en concreto
+     * @param reviewId
+     * @param token
+     * @return
+     */
     @GetMapping("/review/{reviewId}/liked")
     public ResponseEntity<Boolean> isReviewLiked(@PathVariable Long reviewId,@RequestHeader("Authorization") String token) {
         Long userId = tokenProvider.getUserIdFromJWT(token);
@@ -25,6 +34,12 @@ public class LikeController {
         return ResponseEntity.ok(isLiked);
     }
 
+    /**
+     * Añade un like a una review y en caso de que ya tuviera un like lo elimina del usuario recibido del token de auth
+     * @param reviewId
+     * @param token
+     * @return
+     */
     @PostMapping("/like/{reviewId}")
     public ResponseEntity<String> toggleLike(@PathVariable Long reviewId, @RequestHeader("Authorization") String token) {
         Long userId = tokenProvider.getUserIdFromJWT(token);

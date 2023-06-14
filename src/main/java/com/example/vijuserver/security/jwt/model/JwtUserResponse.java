@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Modelo del token JWT
+ */
 @Getter
 @Setter
 @NoArgsConstructor

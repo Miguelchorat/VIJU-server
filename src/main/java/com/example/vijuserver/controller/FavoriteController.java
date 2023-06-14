@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controlador de Favoritos
+ */
 
 @RestController
 @RequiredArgsConstructor
@@ -17,6 +20,12 @@ public class FavoriteController {
     private final JwtProvider tokenProvider;
     private final UserEntityService userService;
 
+    /**
+     * Comprueba si del usuario que envio la petición con el token dio favorito a una review en concreto
+     * @param reviewId
+     * @param token
+     * @return
+     */
     @GetMapping("/review/{reviewId}/favorite")
     public ResponseEntity<Boolean> isReviewFavorite(@PathVariable Long reviewId,@RequestHeader("Authorization") String token) {
         Long userId = tokenProvider.getUserIdFromJWT(token);
@@ -26,6 +35,12 @@ public class FavoriteController {
         return ResponseEntity.ok(isFavorite);
     }
 
+    /**
+     * Añade un favorito a una review y en caso de que ya tuviera un favorito lo elimina del usuario recibido del token de auth
+     * @param reviewId
+     * @param token
+     * @return
+     */
     @PostMapping("/favorite/{reviewId}")
     public ResponseEntity<String> toggleFavorite(@PathVariable Long reviewId, @RequestHeader("Authorization") String token) {
         Long userId = tokenProvider.getUserIdFromJWT(token);
